@@ -1,0 +1,128 @@
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "newapi.mysql.fullname" . }}
+spec:
+  serviceName: {{ include "newapi.mysql.fullname" . }}
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ include "newapi.mysql.fullname" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "newapi.mysql.fullname" . }}
+    spec:
+      containers:
+        - name: mysql
+          image: {{.Values.mysql.repo}}/{{ .Values.mysql.image }}
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: "{{ .Values.mysql.rootPassword }}"
+            - name: MYSQL_DATABASE
+              value: "{{ .Values.mysql.database }}"
+          volumeMounts:
+            - name: volume-data
+              mountPath: /var/lib/mysql
+          imagePullPolicy: IfNotPresent
+      volumes:
+        {{- with .Values.mysql.volumes.data  }}
+        - name: volume-data
+          persistentVolumeClaim:
+            claimName: {{ .name }}
+        {{- end }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "newapi.redis.fullname" . }}
+  labels:
+    app: {{ include "newapi.redis.fullname" . }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ include "newapi.redis.fullname" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "newapi.redis.fullname" . }}
+    spec:
+      containers:
+        - name: redis
+          image: {{.Values.redis.repo}}/{{ .Values.redis.image }}
+          ports:
+            - containerPort: 6379
+          imagePullPolicy: IfNotPresent
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "newapi.fullname" . }}
+  labels:
+    app: {{ include "newapi.fullname" . }}
+spec:
+  replicas: {{ .Values.newapi.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "newapi.fullname" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "newapi.fullname" . }}
+    spec:
+      containers:
+        - name: newapi
+          image: {{.Values.newapi.repo}}/{{ .Values.newapi.image }}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: {{ .Values.newapi.port }}
+          env:
+            - name: SQL_DSN
+              value: {{ .Values.newapi.environment.SQL_DSN }}
+            - name: REDIS_CONN_STRING
+              value: {{ .Values.newapi.environment.REDIS_CONN_STRING }}
+            - name: TZ
+              value: {{ .Values.newapi.environment.TZ }}
+          volumeMounts:
+            - name: volume-data
+              mountPath: /data
+            - name: volume-logs
+              mountPath: /app/logs
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.newapi.healthCheckPath }}
+              port: {{ .Values.newapi.port }}
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.newapi.healthCheckPath }}
+              port: {{ .Values.newapi.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        {{- with .Values.newapi.volumes.data  }}
+        - name: volume-data
+          persistentVolumeClaim:
+            claimName: {{ .name }}
+        {{- end }}
+        - name: volume-logs
+          emptyDir: {}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+

@@ -1,0 +1,53 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "newapi.mysql.fullname" . }}
+  labels:
+    app: {{ include "newapi.mysql.fullname" . }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3306
+      targetPort: 3306
+      protocol: TCP
+      name: mysql
+  selector:
+    app: {{ include "newapi.mysql.fullname" . }}
+
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "newapi.fullname" . }}
+  labels:
+    app: {{ include "newapi.fullname" . }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.newapi.port }}
+      targetPort: {{ .Values.newapi.port }}
+      protocol: TCP
+      name: http
+  selector:
+    app: {{ include "newapi.fullname" . }}
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "newapi.redis.fullname" . }}
+  labels:
+    app: {{ include "newapi.redis.fullname" . }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: 6379
+      targetPort: 6379
+      protocol: TCP
+      name: redis
+  selector:
+    app: {{ include "newapi.redis.fullname" . }}

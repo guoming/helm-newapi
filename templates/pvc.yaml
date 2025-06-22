@@ -1,0 +1,29 @@
+---
+{{- with .Values.newapi.volumes.data }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .name }}
+spec:
+  resources:
+    requests:
+      storage: "{{ .storage }}"
+  storageClassName: {{ .storageClass }}
+  accessModes:
+    - ReadWriteMany
+{{- end }}
+
+---
+{{- with .Values.mysql.volumes.data }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .name }}
+spec:
+  resources:
+    requests:
+      storage: "{{ .storage }}"
+  storageClassName: {{ .storageClass }}
+  accessModes:
+    - ReadWriteMany
+{{- end }}
