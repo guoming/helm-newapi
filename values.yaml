@@ -13,7 +13,7 @@ newapi:
     data:
       name: openapi-data
       storage: 1Gi
-      storageClass: 
+      storageClass: ceph-rbd 
   healthCheckPath: /api/status
 redis:
   repo: *repo
@@ -26,6 +26,6 @@ mysql:
     data:
       name: openapi-mysql-data
       storage: 1Gi
-      storageClass:
+      storageClass: ceph-rbd
   rootPassword: "123456"
   database: newapi
